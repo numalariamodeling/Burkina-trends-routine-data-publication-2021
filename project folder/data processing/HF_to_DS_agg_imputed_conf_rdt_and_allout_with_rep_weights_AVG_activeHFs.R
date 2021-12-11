@@ -23,9 +23,24 @@ require("lubridate")
 
 
 
+
+####################################################################
+
+# Definite reading and writing directory
+
+read_dir <- "~/Box/NU-malaria-team/projects/smc_impact/data/outputs/U5_HF_cases_smc_coords_imputed_rdts_and_allout_MA_activeHFs.csv"
+
+write_dir <- "~/Box/NU-malaria-team/projects/smc_impact/data/outputs/U5_DS_cases_seasonal_smc_good_rows_MA_imputes_w_rep_weights_activeHFs.csv"
+
+
+####################################################################
+
+
+
+
 # Loading health facility dataset
 
-HF_cases <- read.csv("~/Box/NU-malaria-team/projects/smc_impact/data/outputs/U5_HF_cases_smc_coords_imputed_rdts_and_allout_MA_activeHFs.csv", stringsAsFactors = FALSE)
+HF_cases <- read.csv(read_dir, stringsAsFactors = FALSE)
 HF_cases$Date <- as.yearmon(HF_cases$Date)
 
 
@@ -168,7 +183,7 @@ D_cases <- left_join(D_cases, HF_reporting_weighted, by = c("District", "Date", 
 
 # Saving
 
-write.csv(D_cases, "~/Box/NU-malaria-team/projects/smc_impact/data/outputs/U5_DS_cases_seasonal_smc_good_rows_MA_imputes_w_rep_weights_activeHFs.csv", row.names = FALSE)
+write.csv(D_cases, write_dir, row.names = FALSE)
 
 
 

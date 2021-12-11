@@ -24,9 +24,22 @@ library("maditr")
 
 
 
+
+####################################################################
+
+# Definite reading and writing directory
+
+read_dir <- "~/Box/NU-malaria-team/projects/smc_impact/data/outputs/U5_HF_cases_smc_coords_imputed_rdts_and_allout_MA.csv"
+
+write_dir <- "~/Box/NU-malaria-team/projects/smc_impact/data/outputs/U5_HF_cases_smc_coords_imputed_rdts_and_allout_MA_activeHFs.csv"
+
+
+####################################################################
+
+
 # Loading health facility dataset
 
-HF_cases <- read.csv("~/Box/NU-malaria-team/projects/smc_impact/data/outputs/U5_HF_cases_smc_coords_imputed_rdts_and_allout_MA.csv")
+HF_cases <- read.csv(read_dir)
 HF_cases$Date <- as.Date(as.yearmon(HF_cases$Date))
 HF_cases <- HF_cases[order(HF_cases$UID, HF_cases$Date),]
 
@@ -41,6 +54,7 @@ rle.try_allout <- ddply(HF_cases, .(UID), summarize,
 
 
 ####################################################################
+
 
 consec_NA_list_allout_u5 <- split(rle.try_allout[,2:3], rle.try_allout$UID)
 consec_NA_list_allout_u5_reshaped <- lapply(consec_NA_list_allout_u5, function(x) {
@@ -144,7 +158,7 @@ HF_cases_active <- left_join(HF_cases, HF_active, by = c("UID", "Date"))
 
 
 
-write.csv(HF_cases_active, "~/Box/NU-malaria-team/projects/smc_impact/data/outputs/U5_HF_cases_smc_coords_imputed_rdts_and_allout_MA_activeHFs.csv", row.names = FALSE)
+write.csv(HF_cases_active, write_dir, row.names = FALSE)
 
 
 
@@ -158,6 +172,7 @@ write.csv(HF_cases_active, "~/Box/NU-malaria-team/projects/smc_impact/data/outpu
 
 
 
+#################################################################################################
 
 
 #### Checking which HFs became active / became inactive

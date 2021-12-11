@@ -25,9 +25,22 @@ library("maditr")
 
 
 
+####################################################################
+
+# Definite reading and writing directory
+
+read_dir <- "~/Box/NU-malaria-team/projects/smc_impact/data/outputs/U5_Ov5_HF_cases_smc_coords_imputed_rdts_allout_MA.csv"
+
+write_dir <- "~/Box/NU-malaria-team/projects/smc_impact/data/outputs/Ov5_HF_cases_smc_coords_imputed_rdts_and_allout_MA_activeHFs.csv"
+
+
+####################################################################
+
+
+
 # Loading health facility dataset
 
-HF_cases <- read.csv("~/Box/NU-malaria-team/projects/smc_impact/data/outputs/U5_Ov5_HF_cases_smc_coords_imputed_rdts_allout_maladm_MA.csv")
+HF_cases <- read.csv(read_dir)
 HF_cases$Date <- as.Date(as.yearmon(HF_cases$Date))
 HF_cases <- HF_cases[order(HF_cases$UID, HF_cases$Date),]
 
@@ -145,7 +158,7 @@ HF_cases_active <- left_join(HF_cases, HF_active, by = c("UID", "Date"))
 
 
 
-write.csv(HF_cases_active, "~/Box/NU-malaria-team/projects/smc_impact/data/outputs/Ov5_HF_cases_smc_coords_imputed_rdts_and_allout_MA_activeHFs.csv", row.names = FALSE)
+write.csv(HF_cases_active, write_dir, row.names = FALSE)
 
 
 
