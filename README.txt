@@ -18,9 +18,12 @@ Please dont write any data if possible
 
 The "project folder" directory contains the scripts to clean the data as per explained in the methods section. Code in this folder will also run the analysis on the trend components, and create the main and supplemental text figures.
 
+The "pre-processing data" directory contains code for cleaning data for outliers and recalculating u5 and ov5 counts from "lower level" raw data.
+
+
 # "project folder"
 
-1) Execute scripts in "data processing" directory to impute the data, clean the data, find active/inactive health facilities, and calculate reporting rates.
+1) Execute scripts in "data processing" directory to impute the data, find active/inactive health facilities, and calculate reporting rates.
 1.1) Execute "HF_conf_rdt_and_allout_u5_imputation.R" scrip
 1.2) Execute "making_HF_active.R" script
 1.3) Execute "HF_to_DS_agg_imputed_conf_rdt_and_allout_with_rep_weights_AVG_activeHFs.R" script
