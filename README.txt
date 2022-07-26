@@ -9,16 +9,14 @@ Sebastian Rodriguez at
 {sebastian@rodriguez.cr}
 
 
-## NOTE
-
-Please dont write any data if possible
-
 
 ## Usage
 
 The "project folder" directory contains the scripts to clean the data as per explained in the methods section. Code in this folder will also run the analysis on the trend components, and create the main and supplemental text figures.
 
 The "pre-processing data" directory contains code for cleaning data for outliers and recalculating u5 and ov5 counts from "lower level" raw data.
+
+The "SAE code" directory contains R-INLA code for the small-area estimation technique to calculate district level treatment-seeking rates
 
 
 # "project folder"
@@ -36,4 +34,4 @@ The "pre-processing data" directory contains code for cleaning data for outliers
 
 # Last edit
 
-Dec 10, 2021
+Jul 26, 2022
