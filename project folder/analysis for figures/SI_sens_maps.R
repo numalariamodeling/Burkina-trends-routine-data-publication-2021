@@ -1,5 +1,5 @@
 ################################
-##  Sens slope for SI figures ##
+##  Sens slope for figures ##
 ################################
 #
 # Description:
