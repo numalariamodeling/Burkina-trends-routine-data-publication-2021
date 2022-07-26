@@ -1,17 +1,23 @@
-############################################
-##  Seasonal Trend Decomposition figures  ##
-############################################
+#############################################
+##  Seasonal Trend Decomposition Figure 7  ##
+#############################################
 #
 # Description:
-#   Seasonal trend decomposition for all districts
+#   Creating the output for figure 7 in the main text
+#   Seasonal trend decomposition for all districts grouped by SMC rollout group
+#   Decomposing crude incidence and malaria share of outpatient visits variables
 #   Only trend component is plotted, for individual districts
-#   All data was standardized for comparison between districts
+#       and aggregate rollout group
+#   All data was standardized for comparison between groups and
+#       for comparison to figure 6
+#       
+#   Figure was further cleaned and assembled in Adobe Illustrator
 #
-#   SI figures are plotted at the very end in a 2x4 grid
+#
 #
 #
 #  Sebastian Rodriguez (sebastian@rodriguez.cr)
-#  Last edited Oct 31, 2021
+#  Last edited Mar 09, 2021
 #
 
 
@@ -71,22 +77,22 @@ cases$all_cases <- cases$allout_u5 / (cases$U5_pop/1000)
 # Section for Linear functional estimates
 
 
-med_2014 <- read.csv("~/OneDrive/Desktop/medfever_region_2014.csv", stringsAsFactors = FALSE)
-med_2017 <- read.csv("~/OneDrive/Desktop/medfever_region_2017.csv", stringsAsFactors = FALSE)
+med_2014 <- read.csv("~/OneDrive/Desktop/medfever_DS_2014_INLA_fitted_1x1km.csv", stringsAsFactors = FALSE)[,-1]
+med_2017 <- read.csv("~/OneDrive/Desktop/medfever_DS_2017_INLA_fitted_1x1km.csv", stringsAsFactors = FALSE)[,-1]
 
 
 
-med_2014 <- med_2014[,-4]
-names(med_2014)[3] <- "medfever_2014"
-med_2017 <- med_2017[,-4]
-names(med_2017)[3] <- "medfever_2017"
+med_2014 <- med_2014[,-c(2, 4:5)]
+names(med_2014)[2] <- "medfever_2014"
+med_2017 <- med_2017[,-c(2, 4:5)]
+names(med_2017)[2] <- "medfever_2017"
 
-medfever_DHS <- inner_join(med_2014, med_2017, by = c("NOMDEP", "NOMREGION"))
-medfever_DHS <- cbind(medfever_DHS[,1:3], medfever_DHS[,4])
-names(medfever_DHS) <- c("District", "Region", "Aug 2014", "Dec 2017")
+medfever_DHS <- inner_join(med_2014, med_2017, by = "NOMDEP")
+# medfever_DHS <- cbind(medfever_DHS[,1:3], medfever_DHS[,4])
+names(medfever_DHS) <- c("District", "Aug 2014", "Dec 2017")
 
-medfever_DHS <- melt(medfever_DHS, id.vars = c("District", "Region"),
-                     variable.name = "Date", value.name = "medfever_regional")
+medfever_DHS <- melt(medfever_DHS, id.vars = "District",
+                     variable.name = "Date", value.name = "medfever_DS")
 
 
 
@@ -116,12 +122,12 @@ for (D in unique(cases$District))
     D_data <- medfever_DHS[medfever_DHS$District == D,]
     D_data$ind <- c(1, 41)
     
-    D_lm <- lm(medfever_regional ~ ind, data = D_data)
+    D_lm <- lm(medfever_DS ~ ind, data = D_data)
     D_fitted <- predict(D_lm, data.frame("ind" = c(1:53)))
     
     medfever_DHS_fitted_D <- data.frame("District" = rep(D, 53),
                                         "Date" = dates,
-                                        "fitted_regional_medfever" = D_fitted)
+                                        "fitted_DS_medfever" = D_fitted)
     medfever_DHS_fitted <- rbind(medfever_DHS_fitted, medfever_DHS_fitted_D)
 }
 medfever_DHS_fitted$Date <- as.yearmon(medfever_DHS_fitted$Date)
@@ -130,7 +136,7 @@ medfever_DHS_fitted$Date <- as.yearmon(medfever_DHS_fitted$Date)
 
 cases <- left_join(cases, medfever_DHS_fitted, by = c("District", "Date"))
 
-cases$cases_linear_trtseeking_adj_raw <- (cases$conf_rdt_mic_u5 / cases$fitted_regional_medfever) / cases$weighted_rep_rate
+cases$cases_linear_trtseeking_adj_raw <- (cases$conf_rdt_mic_u5 / cases$fitted_DS_medfever) / cases$weighted_rep_rate
 cases$cases_linear_trtseeking_adj <- cases$cases_linear_trtseeking_adj_raw / (cases$U5_pop / 1000)
 
 
@@ -139,12 +145,12 @@ cases$cases_linear_trtseeking_adj <- cases$cases_linear_trtseeking_adj_raw / (ca
 
 # Section for step-function estimates
 
-medfever_DHS <- inner_join(med_2014, med_2017, by = c("NOMDEP", "NOMREGION"))
-medfever_DHS <- cbind(medfever_DHS[,1:3], medfever_DHS[,3], medfever_DHS[,4], medfever_DHS[,4])
-names(medfever_DHS) <- c("District", "Region", "2015", "2016", "2017", "2018")
+medfever_DHS <- inner_join(med_2014, med_2017, by = "NOMDEP")
+medfever_DHS <- cbind(medfever_DHS[,1:2], medfever_DHS[,2], medfever_DHS[,3], medfever_DHS[,3])
+names(medfever_DHS) <- c("District", "2015", "2016", "2017", "2018")
 
-medfever_DHS <- melt(medfever_DHS, id.vars = c("District", "Region"),
-                     variable.name = "year", value.name = "medfever_regional")
+medfever_DHS <- melt(medfever_DHS, id.vars = "District",
+                     variable.name = "year", value.name = "medfever_DS")
 
 
 
@@ -163,19 +169,19 @@ medfever_DHS$year <- as.numeric(as.character(medfever_DHS$year))
 
 
 
-cases <- left_join(cases, medfever_DHS[,-2], by = c("District", "year"))
+cases <- left_join(cases, medfever_DHS, by = c("District", "year"))
 
-cases$medfever_regional_step1 <- cases$medfever_regional
+cases$medfever_DS_step1 <- cases$medfever_DS
 for (D in unique(cases$District))
 {
-    cases[which(cases$District == D & cases$Date %in% as.yearmon(seq(as.Date("2016-05-01"), as.Date("2016-12-01"), by="months"))), "medfever_regional_step1"] <- cases[which(cases$District == D & cases$Date == "Jan 2017"), "medfever_regional_step1"]
+    cases[which(cases$District == D & cases$Date %in% as.yearmon(seq(as.Date("2016-05-01"), as.Date("2016-12-01"), by="months"))), "medfever_DS_step1"] <- cases[which(cases$District == D & cases$Date == "Jan 2017"), "medfever_DS_step1"]
 }
 
 
-cases$cases_step1_trtseeking_adj_raw <- (cases$conf_rdt_mic_u5 / cases$medfever_regional_step1) / cases$weighted_rep_rate
+cases$cases_step1_trtseeking_adj_raw <- (cases$conf_rdt_mic_u5 / cases$medfever_DS_step1) / cases$weighted_rep_rate
 cases$cases_step1_trtseeking_adj <- cases$cases_step1_trtseeking_adj_raw / (cases$U5_pop / 1000)
 
-cases$cases_step2_trtseeking_adj_raw <- (cases$conf_rdt_mic_u5 / cases$medfever_regional) / cases$weighted_rep_rate
+cases$cases_step2_trtseeking_adj_raw <- (cases$conf_rdt_mic_u5 / cases$medfever_DS) / cases$weighted_rep_rate
 cases$cases_step2_trtseeking_adj <- cases$cases_step2_trtseeking_adj_raw / (cases$U5_pop / 1000)
 
 
@@ -184,8 +190,6 @@ cases$cases_step2_trtseeking_adj <- cases$cases_step2_trtseeking_adj_raw / (case
 ################################################################################
 
 
-cases$cases_rep_adj_raw <- cases$conf_rdt_mic_u5 / cases$rep_rate
-cases$cases_rep_adj <- cases$cases_rep_adj_raw / (cases$U5_pop / 1000)
 
 
 cases$cases_rep_weighted_adj_raw <- cases$conf_rdt_mic_u5 / cases$weighted_rep_rate
@@ -205,8 +209,9 @@ cases$mal_ratio_weighted <- cases$cases_rep_weighted_adj / cases$all_cases_rep_w
 
 ## Making Figure 3B
 
-medfever_ci_data_14 <- read.csv("~/OneDrive/Desktop/medfever_region_2014_CI.csv")
-medfever_ci_data_17 <- read.csv("~/OneDrive/Desktop/medfever_region_2017_CI.csv")
+medfever_ci_data_14 <- read.csv("~/OneDrive/Desktop/medfever_DS_2014_INLA_fitted_1x1km.csv", stringsAsFactors = FALSE)[,-1]
+medfever_ci_data_17 <- read.csv("~/OneDrive/Desktop/medfever_DS_2017_INLA_fitted_1x1km.csv", stringsAsFactors = FALSE)[,-1]
+
 
 medfever_ci_data_14$Date <- as.yearmon("Aug 2014")
 medfever_ci_data_17$Date <- as.yearmon("Dec 2017")
@@ -215,23 +220,23 @@ medfever_ci_data <- rbind(medfever_ci_data_14, medfever_ci_data_17)
 medfever_ci_data$Date <- as.yearmon(medfever_ci_data$Date)
 
     
-tmp <- cases[which(cases$District == "pama"), c("Date", "medfever_regional_step1", "medfever_regional")]
+tmp <- cases[which(cases$District == "pama"), c("Date", "medfever_DS_step1", "medfever_DS")]
 tmp <- rbind(data.frame("Date" = medfever_DHS_fitted$Date[1:5],
-                        "medfever_regional_step1" = rep(tmp$medfever_regional_step1[1], 5),
-                        "medfever_regional" = rep(tmp$medfever_regional[1], 5)), tmp)
+                        "medfever_DS_step1" = rep(tmp$medfever_DS_step1[1], 5),
+                        "medfever_DS" = rep(tmp$medfever_DS[1], 5)), tmp)
 
 
 
 
 ggplot(data = tmp, aes(x = Date)) +
-    geom_line(aes(y = medfever_regional_step1), col = "red") +
-    geom_line(aes(y = medfever_regional), col = "green") +
+    geom_line(aes(y = medfever_DS_step1), col = "red") +
+    geom_line(aes(y = medfever_DS), col = "blue") +
     geom_line(inherit.aes = F,
               data = medfever_DHS_fitted[which(medfever_DHS_fitted$District == "pama"),],
-              aes(x = Date, y = fitted_regional_medfever), col = "blue") +
-    geom_point(inherit.aes = F, data = medfever_ci_data[medfever_ci_data$NOMREGION == "EST",],
-               aes(x = Date, y = med_fever)) +
-    geom_errorbar(inherit.aes = F, data = medfever_ci_data[medfever_ci_data$NOMREGION == "EST",],
+              aes(x = Date, y = fitted_DS_medfever), col = "green") +
+    geom_point(inherit.aes = F, data = medfever_ci_data[medfever_ci_data$NOMDEP == "PAMA",],
+               aes(x = Date, y = saep.est)) +
+    geom_errorbar(inherit.aes = F, data = medfever_ci_data[medfever_ci_data$NOMDEP == "PAMA",],
                   aes(x = Date, ymin = ci_l, ymax = ci_u), width = 0.1) +
     theme_bw() + theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 45, hjust = 1),
                        panel.border = element_blank(), panel.grid.major = element_blank(),
@@ -269,10 +274,12 @@ step1_trt_adj_pouytenga_Dec_2017 <- mean(c(cases$cases_step1_trtseeking_adj[pouy
                                            cases$cases_step1_trtseeking_adj[pouytenga_ind_Jan_2018]))
 step2_trt_adj_pouytenga_Dec_2017 <- mean(c(cases$cases_step2_trtseeking_adj[pouytenga_ind_Nov_2017],
                                            cases$cases_step2_trtseeking_adj[pouytenga_ind_Jan_2018]))
-rep_adj_pouytenga_Dec_2017 <- mean(c(cases$cases_rep_adj[pouytenga_ind_Nov_2017],
-                                     cases$cases_rep_adj[pouytenga_ind_Jan_2018]))
+# rep_adj_pouytenga_Dec_2017 <- mean(c(cases$cases_rep_adj[pouytenga_ind_Nov_2017],
+                                     # cases$cases_rep_adj[pouytenga_ind_Jan_2018]))
 weight_rep_adj_pouytenga_Dec_2017 <- mean(c(cases$cases_rep_weighted_adj[pouytenga_ind_Nov_2017],
                                             cases$cases_rep_weighted_adj[pouytenga_ind_Jan_2018]))
+# both_adj_pouytenga_Dec_2017 <- mean(c(cases$cases_both_adj[pouytenga_ind_Nov_2017],
+                                      # cases$cases_both_adj[pouytenga_ind_Jan_2018]))
 mal_ratio_weighted_pouytenga_Dec_2017 <- mean(c(cases$mal_ratio_weighted[pouytenga_ind_Nov_2017],
                                                 cases$mal_ratio_weighted[pouytenga_ind_Jan_2018]))
 all_cases_weight_rep_adj_pouytenga_Dec_2017 <- mean(c(cases$all_cases_rep_weighted_adj[pouytenga_ind_Nov_2017],
@@ -288,7 +295,6 @@ pouytenga_Dec_2017_row_tmp$mal_cases <- mal_cases_pouytenga_Dec_2017
 pouytenga_Dec_2017_row_tmp$cases_linear_trtseeking_adj <- linear_trt_adj_pouytenga_Dec_2017
 pouytenga_Dec_2017_row_tmp$cases_step1_trtseeking_adj <- step1_trt_adj_pouytenga_Dec_2017
 pouytenga_Dec_2017_row_tmp$cases_step2_trtseeking_adj <- step2_trt_adj_pouytenga_Dec_2017
-pouytenga_Dec_2017_row_tmp$cases_rep_adj <- rep_adj_pouytenga_Dec_2017
 pouytenga_Dec_2017_row_tmp$cases_rep_weighted_adj <- weight_rep_adj_pouytenga_Dec_2017
 pouytenga_Dec_2017_row_tmp$mal_ratio_weighted <- mal_ratio_weighted_pouytenga_Dec_2017
 pouytenga_Dec_2017_row_tmp$all_cases_rep_weighted_adj <- all_cases_weight_rep_adj_pouytenga_Dec_2017
@@ -313,7 +319,6 @@ cases$mal_cases_norm <- getNormalized(cases$mal_cases)
 cases$cases_linear_trtseeking_adj_norm <- getNormalized(cases$cases_linear_trtseeking_adj)
 cases$cases_step1_trtseeking_adj_norm <- getNormalized(cases$cases_step1_trtseeking_adj)
 cases$cases_step2_trtseeking_adj_norm <- getNormalized(cases$cases_step2_trtseeking_adj)
-cases$cases_rep_adj_norm <- getNormalized(cases$cases_rep_adj)
 cases$cases_rep_weighted_adj_norm <- getNormalized(cases$cases_rep_weighted_adj)
 cases$mal_ratio_weighted_norm <- getNormalized(cases$mal_ratio_weighted)
 cases$all_cases_rep_weighted_adj_norm <- getNormalized(cases$all_cases_rep_weighted_adj)
@@ -352,10 +357,6 @@ for (DS in sort(unique(cases$District)))
     
     cases_step2_trtseeking_adj_ts <- ts(cases_dist$cases_step2_trtseeking_adj_norm, start = c(2015, 1), deltat = 1/12)
     cases_step2_trtseeking_adj_stl <- stlplus(cases_step2_trtseeking_adj_ts, s.window = "periodic")
-    
-    
-    cases_rep_adj_ts <- ts(cases_dist$cases_rep_adj_norm, start = c(2015, 1), deltat = 1/12)
-    cases_rep_adj_stl <- stlplus(cases_rep_adj_ts, s.window = "periodic")
     
     
     cases_rep_weighted_adj_ts <- ts(cases_dist$cases_rep_weighted_adj_norm, start = c(2015, 1), deltat = 1/12)
@@ -399,12 +400,7 @@ for (DS in sort(unique(cases$District)))
     cases_step2_trtseeking_adj_stl_ts$type <- rep("step2_trtseeking_adj", nrow(cases_step2_trtseeking_adj_stl_ts))
     cases_step2_trtseeking_adj_stl_ts$dates <- dates
     
-
-    cases_rep_adj_stl_ts <- as.data.frame(cases_rep_adj_stl$data[,1:4])
-    cases_rep_adj_stl_ts$type <- rep("rep_adj", nrow(cases_rep_adj_stl_ts))
-    cases_rep_adj_stl_ts$dates <- dates
     
-        
     cases_rep_weighted_adj_stl_ts <- as.data.frame(cases_rep_weighted_adj_stl$data[,1:4])
     cases_rep_weighted_adj_stl_ts$type <- rep("rep_weighted_adj", nrow(cases_rep_weighted_adj_stl_ts))
     cases_rep_weighted_adj_stl_ts$dates <- dates
@@ -431,7 +427,6 @@ for (DS in sort(unique(cases$District)))
                               cases_linear_trtseeking_adj_stl_ts,
                               cases_step1_trtseeking_adj_stl_ts,
                               cases_step2_trtseeking_adj_stl_ts,
-                              cases_rep_adj_stl_ts,
                               cases_rep_weighted_adj_stl_ts,
                               ratio_weighted_stl_ts,
                               all_cases_rep_weighted_adj_stl_ts,
@@ -455,7 +450,7 @@ for (DS in sort(unique(cases$District)))
 ggplot(data = STL_result_DF, aes(x = dates, y = trend)) +
     geom_line(aes(group = District),
               show.legend = FALSE, col = "blue") + ylab("") + 
-    facet_wrap(~type, ncol = 3, scales = "free_y") +
+    facet_wrap(~type, ncol = 3) +
     scale_x_yearmon("", breaks = sort(unique(STL_result_DF$dates))[c(seq(1,48,6), 48)],
                     labels = as.yearmon(sort(unique(STL_result_DF$dates))[c(seq(1,48,6), 48)])) +
     theme_bw() + theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 45, hjust = 1),
@@ -517,7 +512,7 @@ for (i in seq(1,70,4))
     
     
     # Saving SI plots
-    pdf(paste("~/OneDrive/Desktop/SI_figures_STL_paper_2109xx/SI_decomp_v3_", i, ".pdf", sep = ""),
+    pdf(paste("~/OneDrive/Desktop/SI_figures_STL_paper/SI_decomp_v3_", i, ".pdf", sep = ""),
         width = 5.75, height = 2.8)
     grid.arrange(plot_trend_1, plot_trend_2, nrow = 2)
     dev.off()
@@ -526,3 +521,57 @@ for (i in seq(1,70,4))
 
 
 
+
+
+
+
+for (i in seq(1,70,4))
+{
+    # Select 4 district for plotting
+    
+    
+    DS_list <- sort(unique(STL_result_DF$District))[i:(i+3)]
+    
+    plotting_DF <- STL_result_DF[which(STL_result_DF$District %in% DS_list),]
+    
+    
+    plot_trend <- ggplot(plotting_DF, aes(x = dates, y = trend)) +
+        geom_line(aes(group = type, linetype = "solid",
+                      color = factor(type, levels = c("cases", "rep_weighted_adj", "linear_trtseeking_adj",
+                                                      "step1_trtseeking_adj", "step2_trtseeking_adj",
+                                                      "allout_rep_weighted_adj", "all_nonMal_rep_weighted_adj", "ratio_weighted"))),
+                  show.legend = F) +
+        scale_color_manual("", values = c("#913058", "#F6851F", "#00A08A", "#8971B3", "#D61B5A",
+                                          "#5393C3", "#F1A31F", "#98B548")) + scale_linetype_identity("") + 
+        xlab("") + facet_wrap(~District, ncol = 4) +
+        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+              panel.background = element_blank(), axis.line = element_line(colour = "black"),
+              panel.spacing.x = unit(6, "mm"))
+    
+    
+    
+    
+    # Saving SI plots
+    pdf(paste("~/OneDrive/Desktop/SI_figures_STL_paper/SI_decomp_v2_", i, ".pdf", sep = ""))
+    print(plot_trend)
+    dev.off()
+    
+    
+}
+
+
+plotting_DF <- STL_result_DF[which(STL_result_DF$District %in% "pama"),]
+
+
+plot_trend <- ggplot(plotting_DF[plotting_DF$type %in% c("cases", "linear_trtseeking_adj",
+                                                         "step1_trtseeking_adj", "step2_trtseeking_adj"),], aes(x = dates, y = trend)) +
+    geom_line(aes(group = type, linetype = "solid",
+                  color = factor(type, levels = c("cases", "linear_trtseeking_adj",
+                                                  "step1_trtseeking_adj", "step2_trtseeking_adj"))),
+              show.legend = T) +
+    scale_color_manual("", values = c("#913058", "#F6851F", "#00A08A", "#8971B3", "#D61B5A",
+                                      "#5393C3", "#F1A31F", "#98B548")) + scale_linetype_identity("") + 
+    xlab("") + facet_wrap(~District, ncol = 4) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black"),
+          panel.spacing.x = unit(6, "mm"))

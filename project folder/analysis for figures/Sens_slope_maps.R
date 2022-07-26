@@ -1,15 +1,15 @@
-############################################
-##  Sens slope maps for main text figures ##
-############################################
+##############################################
+##  Seasonal Trend Decomposition SI figures ##
+##############################################
 #
 # Description:
-#   Making figures for Sens Slope maps
+#
 #
 #
 #
 #
 #  Sebastian Rodriguez (sebastian@rodriguez.cr)
-#  Last edited Oct 31, 2021
+#  Last edited Dec 13, 2020
 #
 #
 
@@ -49,13 +49,10 @@ getNormalized <- function(vec)
 
 
 
-
-
-
 # Loading health district dataset
 # Creating under-5 population column and fixing date column
 
-cases <- read.csv("~/Box/NU-malaria-team/projects/smc_impact/data/outputs/U5_DS_cases_seasonal_smc_good_rows_MA_imputes_w_rep_weights_activeHFs.csv", header  = TRUE, strip.white = TRUE, stringsAsFactors = FALSE)
+cases <- read.csv("~/OneDrive/Documents/smc_impact/data/outputs/U5_DS_cases_seasonal_smc_good_rows_MA_imputes_w_rep_weights_activeHFs.csv", header  = TRUE, strip.white = TRUE, stringsAsFactors = FALSE)
 cases$U5_pop <- cases$District.Pop * .18
 cases$Date <- as.yearmon(cases$Date)
 
@@ -63,8 +60,6 @@ cases$Date <- as.yearmon(cases$Date)
 
 
 ################################################################################
-
-
 
 
 cases <- cases[order(cases$District, cases$Date),]
@@ -76,28 +71,27 @@ cases$all_cases <- cases$allout_u5 / (cases$U5_pop/1000)
 
 
 
-
 ################################################################################
 
 ## Loading DHS & MIS febrile treatment seeking rates
 
 # Section for Linear functional estimates
 
-med_2014 <- read.csv("~/OneDrive/Desktop/medfever_region_2014.csv", stringsAsFactors = FALSE)
-med_2017 <- read.csv("~/OneDrive/Desktop/medfever_region_2017.csv", stringsAsFactors = FALSE)
+med_2014 <- read.csv("~/OneDrive/Desktop/medfever_DS_2014_INLA_fitted_1x1km.csv", stringsAsFactors = FALSE)[,-1]
+med_2017 <- read.csv("~/OneDrive/Desktop/medfever_DS_2017_INLA_fitted_1x1km.csv", stringsAsFactors = FALSE)[,-1]
 
 
-med_2014 <- med_2014[,-4]
-names(med_2014)[3] <- "medfever_2014"
-med_2017 <- med_2017[,-4]
-names(med_2017)[3] <- "medfever_2017"
+med_2014 <- med_2014[,-c(2, 4:5)]
+names(med_2014)[2] <- "medfever_2014"
+med_2017 <- med_2017[,-c(2, 4:5)]
+names(med_2017)[2] <- "medfever_2017"
 
-medfever_DHS <- inner_join(med_2014, med_2017, by = c("NOMDEP", "NOMREGION"))
+medfever_DHS <- inner_join(med_2014, med_2017, by = "NOMDEP")
 # medfever_DHS <- cbind(medfever_DHS[,1:3], medfever_DHS[,4])
-names(medfever_DHS) <- c("District", "Region", "Aug 2014", "Dec 2017")
+names(medfever_DHS) <- c("District", "Aug 2014", "Dec 2017")
 
-medfever_DHS <- melt(medfever_DHS, id.vars = c("District", "Region"),
-                     variable.name = "Date", value.name = "medfever_regional")
+medfever_DHS <- melt(medfever_DHS, id.vars = "District",
+                     variable.name = "Date", value.name = "medfever_DS")
 
 
 
@@ -127,12 +121,12 @@ for (D in unique(cases$District))
     D_data <- medfever_DHS[medfever_DHS$District == D,]
     D_data$ind <- c(1, 41)
     
-    D_lm <- lm(medfever_regional ~ ind, data = D_data)
+    D_lm <- lm(medfever_DS ~ ind, data = D_data)
     D_fitted <- predict(D_lm, data.frame("ind" = c(1:53)))
     
     medfever_DHS_fitted_D <- data.frame("District" = rep(D, 53),
                                         "Date" = dates,
-                                        "fitted_regional_medfever" = D_fitted)
+                                        "fitted_DS_medfever" = D_fitted)
     medfever_DHS_fitted <- rbind(medfever_DHS_fitted, medfever_DHS_fitted_D)
 }
 medfever_DHS_fitted$Date <- as.yearmon(medfever_DHS_fitted$Date)
@@ -141,7 +135,7 @@ medfever_DHS_fitted$Date <- as.yearmon(medfever_DHS_fitted$Date)
 
 cases <- left_join(cases, medfever_DHS_fitted, by = c("District", "Date"))
 
-cases$cases_linear_trtseeking_adj <- (cases$mal_cases / cases$fitted_regional_medfever) / cases$weighted_rep_rate
+cases$cases_linear_trtseeking_adj <- (cases$mal_cases / cases$fitted_DS_medfever) / cases$weighted_rep_rate
 
 
 
@@ -150,12 +144,12 @@ cases$cases_linear_trtseeking_adj <- (cases$mal_cases / cases$fitted_regional_me
 
 # Section for both Step-function estimates
 
-medfever_DHS <- inner_join(med_2014, med_2017, by = c("NOMDEP", "NOMREGION"))
-medfever_DHS <- cbind(medfever_DHS[,1:3], medfever_DHS[,3], medfever_DHS[,4], medfever_DHS[,4])
-names(medfever_DHS) <- c("District", "Region", "2015", "2016", "2017", "2018")
+medfever_DHS <- inner_join(med_2014, med_2017, by = "NOMDEP")
+medfever_DHS <- cbind(medfever_DHS[,1:2], medfever_DHS[,2], medfever_DHS[,3], medfever_DHS[,3])
+names(medfever_DHS) <- c("District", "2015", "2016", "2017", "2018")
 
-medfever_DHS <- melt(medfever_DHS, id.vars = c("District", "Region"),
-                     variable.name = "year", value.name = "medfever_regional")
+medfever_DHS <- melt(medfever_DHS, id.vars = "District",
+                     variable.name = "year", value.name = "medfever_DS")
 
 
 
@@ -174,21 +168,21 @@ medfever_DHS$year <- as.numeric(as.character(medfever_DHS$year))
 
 
 
-cases <- left_join(cases, medfever_DHS[,-2], by = c("District", "year"))
+cases <- left_join(cases, medfever_DHS, by = c("District", "year"))
 
-cases$medfever_regional_step1 <- cases$medfever_regional
+cases$medfever_DS_step1 <- cases$medfever_DS
 for (D in unique(cases$District))
 {
-    cases[which(cases$District == D & cases$Date %in% as.yearmon(seq(as.Date("2016-05-01"), as.Date("2016-12-01"), by="months"))), "medfever_regional_step1"] <- cases[which(cases$District == D & cases$Date == "Jan 2017"), "medfever_regional_step1"]
+    cases[which(cases$District == D & cases$Date %in% as.yearmon(seq(as.Date("2016-05-01"), as.Date("2016-12-01"), by="months"))), "medfever_DS_step1"] <- cases[which(cases$District == D & cases$Date == "Jan 2017"), "medfever_DS_step1"]
 }
 
 
-cases$cases_step1_trtseeking_adj <- (cases$mal_cases / cases$medfever_regional_step1) / cases$weighted_rep_rate
+cases$cases_step1_trtseeking_adj <- (cases$mal_cases / cases$medfever_DS_step1) / cases$weighted_rep_rate
 
-cases$cases_step2_trtseeking_adj <- (cases$mal_cases / cases$medfever_regional) / cases$weighted_rep_rate
+cases$cases_step2_trtseeking_adj <- (cases$mal_cases / cases$medfever_DS) / cases$weighted_rep_rate
 
 
-cases$cases_rep_adj <- cases$mal_cases / cases$rep_rate
+
 cases$cases_rep_weighted_adj <- cases$mal_cases / cases$weighted_rep_rate
 
 
@@ -224,8 +218,6 @@ step1_trt_adj_pouytenga_Dec_2017 <- mean(c(cases$cases_step1_trtseeking_adj[pouy
 step2_trt_adj_pouytenga_Dec_2017 <- mean(c(cases$cases_step2_trtseeking_adj[pouytenga_ind_Nov_2017],
                                            cases$cases_step2_trtseeking_adj[pouytenga_ind_Jan_2018]))
 
-rep_adj_pouytenga_Dec_2017 <- mean(c(cases$cases_rep_adj[pouytenga_ind_Nov_2017],
-                                     cases$cases_rep_adj[pouytenga_ind_Jan_2018]))
 weight_rep_adj_pouytenga_Dec_2017 <- mean(c(cases$cases_rep_weighted_adj[pouytenga_ind_Nov_2017],
                                             cases$cases_rep_weighted_adj[pouytenga_ind_Jan_2018]))
 
@@ -245,7 +237,6 @@ pouytenga_Dec_2017_row_tmp$mal_cases <- mal_cases_pouytenga_Dec_2017
 pouytenga_Dec_2017_row_tmp$cases_linear_trtseeking_adj <- linear_trt_adj_pouytenga_Dec_2017
 pouytenga_Dec_2017_row_tmp$cases_step1_trtseeking_adj <- step1_trt_adj_pouytenga_Dec_2017
 pouytenga_Dec_2017_row_tmp$cases_step2_trtseeking_adj <- step2_trt_adj_pouytenga_Dec_2017
-pouytenga_Dec_2017_row_tmp$cases_rep_adj <- rep_adj_pouytenga_Dec_2017
 pouytenga_Dec_2017_row_tmp$cases_rep_weighted_adj <- weight_rep_adj_pouytenga_Dec_2017
 pouytenga_Dec_2017_row_tmp$all_cases_rep_weighted_adj <- all_cases_weight_rep_adj_pouytenga_Dec_2017
 pouytenga_Dec_2017_row_tmp$all_nonMal_cases_rep_weighted_adj <- all_nonMal_weight_rep_adj_pouytenga_Dec_2017
@@ -296,11 +287,6 @@ for (DS in sort(unique(cases$District)))
     step2_trt_adj_norm <- getNormalized(cases_dist$cases_step2_trtseeking_adj)
     step2_trt_adj_norm_ts <- ts(step2_trt_adj_norm, start = c(2015, 1), deltat = 1/12)
     step2_trt_adj_stl <- stlplus(step2_trt_adj_norm_ts, s.window="periodic")
-    
-    
-    rep_adj_norm <- getNormalized(cases_dist$cases_rep_adj)
-    rep_adj_norm_ts <- ts(rep_adj_norm, start = c(2015, 1), deltat = 1/12)
-    rep_adj_stl <- stlplus(rep_adj_norm_ts, s.window="periodic")
     
     
     rep_weighted_adj_norm <- getNormalized(cases_dist$cases_rep_weighted_adj)
@@ -356,13 +342,6 @@ for (DS in sort(unique(cases$District)))
     step2_trt_adj_stl_ts$sens_slope <- sea.sens.slope(step2_trt_adj_norm_ts)
   
     
-    rep_adj_stl_ts <- as.data.frame(rep_adj_stl$data[,1:4]) 
-    rep_adj_stl_ts$type <- rep("rep_adj", nrow(rep_adj_stl_ts))
-    rep_adj_stl_ts$dates <- dates
-    rep_adj_stl_ts$MK_p <- smk.test(rep_adj_norm_ts)$p.value
-    rep_adj_stl_ts$sens_slope <- sea.sens.slope(rep_adj_norm_ts)
-    
-    
     rep_weighted_adj_stl_ts <- as.data.frame(rep_weighted_adj_stl$data[,1:4]) 
     rep_weighted_adj_stl_ts$type <- rep("rep_weighted_adj", nrow(rep_weighted_adj_stl_ts))
     rep_weighted_adj_stl_ts$dates <- dates
@@ -399,7 +378,6 @@ for (DS in sort(unique(cases$District)))
                                    linear_trt_adj_stl_ts,
                                    step1_trt_adj_stl_ts,
                                    step2_trt_adj_stl_ts,
-                                   rep_adj_stl_ts,
                                    rep_weighted_adj_stl_ts,
                                    all_cases_rep_weighted_adj_stl_ts,
                                    all_nonMal_rep_weighted_adj_stl_ts,
@@ -437,10 +415,10 @@ STL_result_DF_slopes <- unique(STL_result_DF_norm[,c(5,7:10)])
 
 
 
-burkina_shape <- readOGR("~/Box/NU-malaria-team/data/burkina_shapefiles/Burkina Faso Health Districts SHP (130715)/BFA.shp")
+burkina_shape <- readOGR("~/OneDrive/Documents/burkina_shapefiles/Burkina Faso Health Districts SHP (130715)/BFA.shp")
 burkina_shape_DF <- fortify(burkina_shape, region = "District")
 
-burkina_shape_R <- readOGR("~/Box/NU-malaria-team/data/burkina_shapefiles/BFA_adm_shp/BFA_adm1.shp")
+burkina_shape_R <- readOGR("~/OneDrive/Documents/burkina_shapefiles/BFA_adm_shp/BFA_adm1.shp")
 burkina_shape_Region <- fortify(burkina_shape_R, region = "NAME_1")
 
 
@@ -463,29 +441,86 @@ burkina_shape_DF_sens <- inner_join(burkina_shape_DF, STL_result_DF_slopes, by =
 
 
 
-ggplot(data = burkina_shape_DF_sens, aes(x = long, y = lat, group = group)) +
-    geom_polygon(aes(fill = plotting_sens_slope), color = "white") +
-    geom_polygon(data = burkina_shape_Region, inherit.aes = F,
-                 aes(x = long, y = lat, group = group),
-                 color = "black", fill = NA) + coord_equal() + 
-    scale_fill_gradient2("Sen's slope coefficient", low = "#4575B4", mid = "#FFFFBF", high = "#D73027",
-                         midpoint = 0, n.breaks = 6,
-                         limits = range(burkina_shape_DF_sens$plotting_sens_slope, na.rm = T)) +
-    theme_void() + theme(plot.title = element_text(hjust = 0.5)) + facet_wrap(~type, ncol = 3)
+ggplot(data = burkina_shape_DF_sens,
+       aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = plotting_sens_slope), color = "white") +
+  geom_polygon(data = burkina_shape_Region, inherit.aes = F,
+               aes(x = long, y = lat, group = group),
+               color = "black", fill = NA) + coord_equal() + 
+  scale_fill_gradient2("Sen's slope coefficient", low = "#4575B4", mid = "#FFFFBF", high = "#D73027",
+                       midpoint = 0, n.breaks = 6,
+                       limits = range(burkina_shape_DF_sens$plotting_sens_slope, na.rm = T)) +
+  theme_void() + theme(plot.title = element_text(hjust = 0.5)) + facet_wrap(~type, ncol = 3)
+
+
+
+
+ggplot(data = burkina_shape_DF_sens,
+       aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = plotting_sens_slope), color = "white") +
+  geom_polygon(data = burkina_shape_Region, inherit.aes = F,
+               aes(x = long, y = lat, group = group),
+               color = "black", fill = NA) + coord_equal() + 
+  scale_fill_steps2("Sen's slope coefficient", low = "#4575B4", mid = "#FFFFBF", high = "#D73027",
+                    midpoint = 0, n.breaks = 6,
+                    limits = range(burkina_shape_DF_sens$plotting_sens_slope, na.rm = T)) +
+  theme_void() + theme(plot.title = element_text(hjust = 0.5)) + facet_wrap(~type, ncol = 3)
+
+
+
+ggplot(data = burkina_shape_DF_sens,
+       aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = plotting_sens_slope), color = "white") +
+  geom_polygon(data = burkina_shape_Region, inherit.aes = F,
+               aes(x = long, y = lat, group = group),
+               color = "black", fill = NA) + coord_equal() + 
+  scale_fill_steps2("Sen's slope coefficient", low = "#4575B4", mid = "#FFFFBF", high = "#D73027",
+                    midpoint = 0, n.breaks = 7,
+                    limits = range(burkina_shape_DF_sens$plotting_sens_slope, na.rm = T)) +
+  theme_void() + theme(plot.title = element_text(hjust = 0.5)) + facet_wrap(~type, ncol = 3)
+
+
+library("dichromat")
+
+ggplot(data = burkina_shape_DF_sens,
+       aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = plotting_sens_slope), color = "white") +
+  geom_polygon(data = burkina_shape_Region, inherit.aes = F,
+               aes(x = long, y = lat, group = group),
+               color = "black", fill = NA) + coord_equal() + 
+  scale_fill_steps2("Sen's slope coefficient", low = "#0055FF", mid = "#CCFFFF", high = "#FF5500",
+                    midpoint = 0, n.breaks = 7,
+                    limits = range(burkina_shape_DF_sens$plotting_sens_slope, na.rm = T)) +
+  theme_void() + theme(plot.title = element_text(hjust = 0.5)) + facet_wrap(~type, ncol = 3)
+
+
+ggplot(data = burkina_shape_DF_sens,
+       aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = plotting_sens_slope), color = "white") +
+  geom_polygon(data = burkina_shape_Region, inherit.aes = F,
+               aes(x = long, y = lat, group = group),
+               color = "black", fill = NA) + coord_equal() + 
+  scale_fill_steps2("Sen's slope coefficient", low = "#0080FF", mid = "#FFFFCC", high = "#FF8000",
+                    midpoint = 0, n.breaks = 5,
+                    limits = range(burkina_shape_DF_sens$plotting_sens_slope, na.rm = T)) +
+  theme_void() + theme(plot.title = element_text(hjust = 0.5)) + facet_wrap(~type, ncol = 3)
+
+
+ggplot(data = burkina_shape_DF_sens,
+       aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = plotting_sens_slope), color = "white") +
+  geom_polygon(data = burkina_shape_Region, inherit.aes = F,
+               aes(x = long, y = lat, group = group),
+               color = "black", fill = NA) + coord_equal() + 
+  scale_fill_stepsn("Sen's slope coefficient", colours = cols,
+                    n.breaks = 6,
+                    limits = range(burkina_shape_DF_sens$plotting_sens_slope, na.rm = T)) +
+  theme_void() + theme(plot.title = element_text(hjust = 0.5)) + facet_wrap(~type, ncol = 3)
 
 
 
 
 
-
-
-
-
-
-
-
-
-## Looking up some numbers
 
 
 STL_result_DF_slopes_new <- dcast(STL_result_DF_slopes, District ~ type, value.var = "plotting_sens_slope", sum)
@@ -510,6 +545,7 @@ View(STL_result_DF_slopes_new[which(STL_result_DF_slopes_new$rep_weighted_adj > 
 
 STL_result_DF_slopes_new_b <- cbind(STL_result_DF_slopes_new[,1], sign(STL_result_DF_slopes_new[,2:ncol(STL_result_DF_slopes_new)]))
 
-apply(STL_result_DF_slopes_new_b, 2, table)
+apply(STL_result_DF_slopes_new_b[,-1], 2, table)
+
 
 
